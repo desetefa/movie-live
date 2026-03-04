@@ -78,6 +78,7 @@ export default function TitlePage({
   const [currentTime, setCurrentTime] = useState(0);
   const [savedWatchPosition, setSavedWatchPosition] = useState(0);
   const prevPlayingRef = useRef(false);
+  const [syncTrigger, setSyncTrigger] = useState(0);
   const { data: session, status } = useSession();
 
   useEffect(() => {
@@ -280,8 +281,9 @@ export default function TitlePage({
 
       <main className="flex min-h-0 w-full flex-1 flex-row overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-row overflow-hidden pl-4">
-          <div className="flex h-full min-h-0 shrink-0 self-stretch">
-            <TimelineSlider
+          <div className="relative flex h-full min-h-0 w-12 shrink-0 flex-col self-stretch border-r border-zinc-800 bg-zinc-900/50">
+            <div className="absolute inset-0 top-0 bottom-0">
+              <TimelineSlider
               orientation="vertical"
               currentTime={timerTime}
               runtimeSeconds={
@@ -293,7 +295,22 @@ export default function TitlePage({
               postMarkers={postMarkers}
               savedPosition={savedWatchPosition}
               onJumpToSaved={() => handleSeek(savedWatchPosition)}
-            />
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSyncTrigger((t) => t + 1)}
+              className="absolute bottom-0 left-0 right-0 z-10 border-t border-zinc-800 bg-zinc-900/95 px-2 py-8 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
+              title="Sync list to playhead"
+              aria-label="Sync list to playhead"
+            >
+              <svg viewBox="0 0 24 24" className="mx-auto h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 21v-5h-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
           <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pr-4">
             <PostFeed
@@ -308,6 +325,7 @@ export default function TitlePage({
               isPaused={!isPlaying}
               onTogglePlay={toggle}
               onSeek={handleSeek}
+              syncTrigger={syncTrigger}
               onPost={handlePost}
               onLike={handleLike}
               onUnlike={handleUnlike}

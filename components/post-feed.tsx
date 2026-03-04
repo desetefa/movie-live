@@ -12,6 +12,7 @@ interface PostFeedProps {
   isPaused: boolean;
   onTogglePlay: () => void;
   onSeek?: (seconds: number) => void;
+  syncTrigger?: number;
   onPost: (content: string, timecodeSeconds: number) => Promise<void>;
   onLike: (postId: string) => Promise<void>;
   onUnlike: (postId: string) => Promise<void>;
@@ -27,6 +28,7 @@ export function PostFeed({
   isPaused,
   onTogglePlay,
   onSeek,
+  syncTrigger,
   onPost,
   onLike,
   onUnlike,
@@ -39,6 +41,7 @@ export function PostFeed({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScrollRef = useRef(false);
   const seekCameFromScrollRef = useRef(false);
+  const userScrolledDuringPlaybackRef = useRef(false);
   const [isLingering, setIsLingering] = useState(true);
   const lingerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -77,6 +80,7 @@ export function PostFeed({
       seekCameFromScrollRef.current = false;
       return;
     }
+    if (!isPaused && userScrolledDuringPlaybackRef.current) return;
     const el = scrollRef.current;
     if (!el) return;
     reportScrollActivity();
@@ -86,7 +90,21 @@ export function PostFeed({
     requestAnimationFrame(() => {
       isProgrammaticScrollRef.current = false;
     });
-  }, [timerTime, targetScrollTop, reportScrollActivity]);
+  }, [timerTime, targetScrollTop, reportScrollActivity, isPaused]);
+
+  useEffect(() => {
+    if (syncTrigger == null) return;
+    userScrolledDuringPlaybackRef.current = false;
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    const target = Math.min(maxScroll, Math.max(0, timerTime * PIXELS_PER_SECOND));
+    isProgrammaticScrollRef.current = true;
+    el.scrollTop = target;
+    requestAnimationFrame(() => {
+      isProgrammaticScrollRef.current = false;
+    });
+  }, [syncTrigger, timerTime]);
 
   useEffect(() => {
     return () => {
@@ -101,15 +119,19 @@ export function PostFeed({
     if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
     scrollRafRef.current = requestAnimationFrame(() => {
       scrollRafRef.current = null;
-      const el = scrollRef.current;
-      if (!el) return;
-      seekCameFromScrollRef.current = true;
-      const rawTime = el.scrollTop / PIXELS_PER_SECOND;
-      const clamped =
-        runtimeSeconds != null
-          ? Math.min(runtimeSeconds, Math.max(0, rawTime))
-          : Math.max(0, rawTime);
-      onSeek(Math.round(clamped));
+      if (!isPaused) {
+        userScrolledDuringPlaybackRef.current = true;
+      } else if (onSeek) {
+        const el = scrollRef.current;
+        if (!el) return;
+        seekCameFromScrollRef.current = true;
+        const rawTime = el.scrollTop / PIXELS_PER_SECOND;
+        const clamped =
+          runtimeSeconds != null
+            ? Math.min(runtimeSeconds, Math.max(0, rawTime))
+            : Math.max(0, rawTime);
+        onSeek(Math.round(clamped));
+      }
     });
   };
 
@@ -125,7 +147,7 @@ export function PostFeed({
           currentTime={timerTime}
           runtimeSeconds={runtimeSeconds}
           isPlaying={!isPaused}
-          blurFutureWhileActive={!isLingering}
+          blurFutureWhileActive={!isPaused ? false : !isLingering}
           onLike={onLike}
           onUnlike={onUnlike}
           onCommentAdded={onCommentAdded}

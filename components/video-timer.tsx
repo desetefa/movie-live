@@ -31,16 +31,19 @@ export function VideoTimer({
     onTimeChange?.(defaultPosition);
   }, [defaultPosition, onTimeChange]);
 
+  const TICK_MS = 50;
+  const TICK_SEC = TICK_MS / 1000;
+
   useEffect(() => {
     if (isPlaying) {
       intervalRef.current = setInterval(() => {
         setCurrentTime((prev) => {
-          const next = Math.min(prev + 1, maxSeconds);
+          const next = Math.min(prev + TICK_SEC, maxSeconds);
           if (next >= maxSeconds) stopInterval();
           onTimeChange?.(next);
           return next;
         });
-      }, 1000);
+      }, TICK_MS);
     } else {
       stopInterval();
     }

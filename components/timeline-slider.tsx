@@ -99,7 +99,7 @@ export function TimelineSlider({
       <div
         className="relative flex h-full min-h-0 w-12 shrink-0 flex-col overflow-hidden border-r border-zinc-800 bg-zinc-900/50"
       >
-        <div className="absolute bottom-12 left-0 right-0 top-0 flex flex-col pt-12 pb-8">
+        <div className="absolute bottom-24 left-0 right-0 top-0 flex flex-col pt-12 pb-12">
           <div
             ref={trackRef}
             role="slider"
